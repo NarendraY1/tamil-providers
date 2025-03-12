@@ -115,36 +115,43 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val tvTags = listOf("TV Series", "TV Shows", "WeB Series")
         val type = if (tags.joinToString().containsAnyOfIgnoreCase(tvTags)) TvType.TvSeries else TvType.Movie
 
-        val iframeRegex = Regex("""\[.*\]""")
-        val iframe = doc.select("""div.entry-content > p""").mapNotNull{ it }.filter{
-            iframeRegex.find(it.toString()) != null
-        }
-        //Log.d("iframe", iframe.toString())
-        val data = iframe.map {
-            UHDLinks(
-                it.text(),
-                doc.select("div.entry-content > p > span > span > a").attr("href")
-            )
-        }
+        val links = doc.select("div.entry-content > p > span > span > a, div.entry-content a[href*=driveleech], div.entry-content a[href*=techmny]")
+            .mapNotNull { link ->
+                val href = link.attr("href")
+                if (href.isNotEmpty() && (href.contains("driveleech") || href.contains("techmny"))) {
+                    val name = link.parent()?.parent()?.previousElementSibling()?.text() ?: link.text()
+                    UHDLinks(name, href)
+                } else null
+            }
 
         val episodes = ArrayList<Episode>()
-        /*doc.select("section.container > div.border-b").forEach { me ->
-            val seasonNum = me.select("button > span").text()
-            me.select("div.season-list > a").forEach {
-                episodes.add(
-                    Episode(
-                        data = mainUrl + it.attr("href").toString(),
-                        name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
-                        posterUrl = poster,
-                        season = titRegex.find(seasonNum)?.value?.toInt(),
-                        episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
-                    )
-                )
+        if (type == TvType.TvSeries) {
+            doc.select("div.entry-content > h4, div.entry-content > h3").forEach { header ->
+                val seasonData = header.text()
+                val seasonNumber = Regex("Season\\s*(\\d+)").find(seasonData)?.groupValues?.get(1)?.toIntOrNull()
+                if (seasonNumber != null) {
+                    val episodeLinks = header.nextElementSibling()?.select("a")?.mapNotNull { link ->
+                        val href = link.attr("href")
+                        if (href.isNotEmpty() && (href.contains("driveleech") || href.contains("techmny"))) {
+                            UHDLinks(link.text(), href)
+                        } else null
+                    }
+                    if (!episodeLinks.isNullOrEmpty()) {
+                        episodes.add(
+                            Episode(
+                                data = parseJson(episodeLinks),
+                                name = "Episode $seasonNumber",
+                                season = seasonNumber,
+                                episode = 1
+                            )
+                        )
+                    }
+                }
             }
-        }*/
+        }
 
         return if (type == TvType.Movie) {
-            newMovieLoadResponse(title, url, TvType.Movie, data) {
+            newMovieLoadResponse(title, url, TvType.Movie, parseJson(links)) {
                 this.posterUrl = poster?.trim()
                 this.year = year
                 this.tags = tags
