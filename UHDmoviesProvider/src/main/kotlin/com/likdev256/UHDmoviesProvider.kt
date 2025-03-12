@@ -15,7 +15,7 @@ import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://uhdmovies.zip"
+    override var mainUrl = "https://uhdmovies.fyi"
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -139,7 +139,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     if (!episodeLinks.isNullOrEmpty()) {
                         episodes.add(
                             Episode(
-                                data = parseJson(episodeLinks),
+                                data = episodeLinks.joinToString(",") { it.sourceLink },
                                 name = "Episode $seasonNumber",
                                 season = seasonNumber,
                                 episode = 1
@@ -151,7 +151,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         }
 
         return if (type == TvType.Movie) {
-            newMovieLoadResponse(title, url, TvType.Movie, parseJson(links)) {
+            newMovieLoadResponse(title, url, TvType.Movie, links.joinToString(",") { it.sourceLink }) {
                 this.posterUrl = poster?.trim()
                 this.year = year
                 this.tags = tags
@@ -330,11 +330,11 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        val sources = parseJson<ArrayList<UHDLinks>>(data)
+        val sources = data.split(",").map { link ->
+            UHDLinks("", link)
+        }
         
         sources.apmap { me ->
-            val name = me.sourceName
             val link = me.sourceLink
             val driveLink =
                 if (link.contains("driveleech")) bypassDriveleech(link) else bypassTechmny(link)
@@ -348,27 +348,15 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 extractMirrorUHD(bitLink, base)
             }
 
-            val tags =
-                Regex("(\\d{3,4}[Pp]\\.?.*?)\\[").find(name)?.groupValues?.getOrNull(1)
-                    ?.replace(".", " ")?.trim()
-                    ?: ""
-            val qualities =
-                Regex("(\\d{3,4})[Pp]").find(name)?.groupValues?.getOrNull(1)?.toIntOrNull()
-                    ?: Qualities.Unknown.value
-            val size =
-                Regex("(?i)\\[(\\S+\\s?(gb|mb))[]/]").find(name)?.groupValues?.getOrNull(1)
-                    ?.let { "[$it]" } ?: name
-
             callback.invoke(
                 ExtractorLink(
                     "UHDMovies",
-                    "$tags $size",
+                    "UHDMovies",
                     downloadLink ?: return@apmap,
                     "",
-                    qualities
+                    Qualities.Unknown.value
                 )
             )
-
         }
         return true
     }
