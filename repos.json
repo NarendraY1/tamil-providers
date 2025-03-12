@@ -1,1 +1,8 @@
-﻿{    "name": "Tamil Providers Repository",    "description": "A collection of Tamil content providers for CloudStream",    "manifestVersion": 1,    "pluginLists": [        "https://raw.githubusercontent.com/NarendraY1/tamil-providers/builds/plugins.json"    ]}
+{
+  "name": "Tamil Providers Repository",
+  "description": "A collection of Tamil content providers for CloudStream",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/NarendraY1/tamil-providers/builds/plugins.json"
+  ]
+} 
