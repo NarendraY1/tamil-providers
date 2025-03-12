@@ -26,7 +26,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/" to "Home",
+        "$mainUrl/" to "Homes",
         "$mainUrl/movies/" to "Movies",
         "$mainUrl/tv-series/" to "TV Series",
         "$mainUrl/tv-shows/" to "TV Shows",
